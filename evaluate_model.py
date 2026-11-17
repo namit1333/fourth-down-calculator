@@ -67,7 +67,7 @@ console.log(JSON.stringify(rows.map(r => ({...calculate(r), current:wp(r.score,(
     metrics('Previous touchdown assumption', td[converted], (df.loc[converted, 'ydstogo'] == df.loc[converted, 'yardline_100']).astype(int))
     kick = (df.action == 'kick') & prediction.kickProb.notna() & df.field_goal_result.isin(['made', 'missed', 'blocked'])
     metrics('Field goal make', (df.loc[kick, 'field_goal_result'] == 'made').astype(int), prediction.loc[kick, 'kickProb'])
-    punts = (df.action == 'punt') & df.kick_distance.notna() & (df.punt_blocked == 0) & (df.touchdown == 0)
+    punts = (df.action == 'punt') & df.kick_distance.notna() & (df.punt_blocked == 0) & (df.touchdown == 0) & prediction.puntAverageOwn.notna()
     actual_own = np.where(df.loc[punts, 'touchback'] == 1, 20,
                           np.clip(df.loc[punts, 'yardline_100'] - df.loc[punts, 'kick_distance'] + df.loc[punts, 'return_yards'].fillna(0), .5, 99.5))
     new = prediction.loc[punts, 'puntAverageOwn'].to_numpy()
@@ -78,6 +78,8 @@ console.log(JSON.stringify(rows.map(r => ({...calculate(r), current:wp(r.score,(
     for low, high in [(0, .2), (.2, .4), (.4, .6), (.6, .8), (.8, 1.01)]:
         bucket = (prediction.current >= low) & (prediction.current < high)
         if bucket.sum(): metrics(f'Current WP bin {low:.1f}–{min(high, 1):.1f}', df.loc[bucket, 'won'], prediction.loc[bucket, 'current'])
+    unavailable = (df.action == 'punt') & prediction.punt.isna()
+    print(f'Actual punts excluded because field position has insufficient training data: {unavailable.sum()}')
     print('Note: decision-specific comparisons describe selected real-world plays, not randomized counterfactual decisions.')
 
 

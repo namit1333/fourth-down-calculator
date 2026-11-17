@@ -105,9 +105,10 @@ def main():
     distribution = []
     for bucket in range(10):
         sample = punts[punts.bucket == bucket]
-        if len(sample) < 30:  # sparse extremes borrow the nearest sufficiently populated bucket
-            populated = [b for b in range(10) if (punts.bucket == b).sum() >= 30]
-            sample = punts[punts.bucket == min(populated, key=lambda b: abs(b - bucket))]
+        # Do not project distant buckets onto unsupported field positions.
+        if len(sample) < 30:
+            distribution.append(None)
+            continue
         counts = sample.outcome.value_counts()
         distribution.append([[key, int(count)] for key, count in counts.items()])
     result = {'seasons': SEASONS, 'wp': wp.tolist(), 'go': go.tolist(), 'td': td.tolist(),
