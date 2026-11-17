@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fourth &amp; Found — 4th down decision calculator</title>
+  <style>input[aria-invalid="true"]{border-color:#b8583f;background:#fff6f2}</style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,16 +18,16 @@
         <div class="panel-head"><div><div class="section-kicker">01 / SET THE SCENE</div><h2 id="situation-title">Game situation</h2></div><span class="head-icon">⌁</span></div>
         <div class="settings-body">
           <div class="control-heading"><span>THE SCORE</span><span class="caption">Possession team first</span></div>
-          <div class="score-inputs"><label><span>YOUR TEAM</span><input id="our-score" type="number" min="0" max="99" value="21"></label><span class="score-dash">—</span><label><span>OPPONENT</span><input id="their-score" type="number" min="0" max="99" value="24"></label></div>
+          <div class="score-inputs"><label><span>YOUR TEAM</span><input id="our-score" type="number" min="0" max="9999" step="1" required value="21"></label><span class="score-dash">—</span><label><span>OPPONENT</span><input id="their-score" type="number" min="0" max="9999" step="1" required value="24"></label></div>
           <div class="rule"></div>
           <div class="control-heading"><span>GAME CLOCK</span><span class="caption">Regulation only</span></div>
-          <div class="clock-inputs"><label>QUARTER<select id="quarter"><option value="1">1st quarter</option><option value="2">2nd quarter</option><option value="3">3rd quarter</option><option value="4" selected>4th quarter</option></select></label><label>MIN<input id="minutes" type="number" min="0" max="15" value="8"></label><span>:</span><label>SEC<input id="seconds" type="number" min="0" max="59" value="30"></label></div>
+          <div class="clock-inputs"><label>QUARTER<select id="quarter"><option value="1">1st quarter</option><option value="2">2nd quarter</option><option value="3">3rd quarter</option><option value="4" selected>4th quarter</option></select></label><label>MIN<input id="minutes" type="number" min="0" max="15" step="1" required value="8"></label><span>:</span><label>SEC<input id="seconds" type="number" min="0" max="59" step="1" required value="30"></label></div>
           <div class="rule"></div>
-          <div class="range-block"><div class="control-heading"><label for="yardline">FIELD POSITION</label><strong id="yard-label"></strong></div><input type="range" id="yardline" min="1" max="99" value="38"><div class="range-ends"><span>OWN 1</span><span>MIDFIELD</span><span>OPP 1</span></div><p class="help">Where your offense is lined up.</p></div>
-          <div class="range-block distance-block"><div class="control-heading"><label for="distance">YARDS TO GO</label><strong id="distance-label"></strong></div><input type="range" id="distance" min="1" max="30" value="3"><div class="range-ends"><span>1 YARD</span><span>30 YARDS</span></div></div>
+          <div class="range-block"><div class="control-heading"><label for="yardline">FIELD POSITION</label><strong id="yard-label"></strong></div><input type="range" id="yardline" min="0.5" max="99.5" step="0.5" value="62"><div class="range-ends"><span>OWN ½</span><span>MIDFIELD</span><span>OPP ½</span></div><p class="help">Where your offense is lined up.</p></div>
+          <div class="range-block distance-block"><div class="control-heading"><label for="distance">YARDS TO GO</label><strong id="distance-label"></strong></div><input type="range" id="distance" min="0.5" max="99.5" step="0.5" value="3"><div class="range-ends"><span>½ YARD</span><span>99½ YARDS</span></div></div>
           <div class="rule"></div>
           <div class="control-heading"><span>TIMEOUTS REMAINING</span><span class="caption">This half</span></div><div class="timeout-inputs"><label>YOUR TEAM<select id="our-timeouts"><option>0</option><option>1</option><option>2</option><option selected>3</option></select></label><label>OPPONENT<select id="their-timeouts"><option>0</option><option>1</option><option>2</option><option selected>3</option></select></label></div>
-          <p id="validation" class="validation" role="status"></p>
+          <p id="validation" class="validation" role="status"></p><p id="scenario-warning" class="help" role="status"></p>
         </div>
       </section>
       <div class="results-column">
@@ -39,7 +40,7 @@
         </section>
       </div>
     </div>
-    <section class="method"><div><span class="section-kicker">A NOTE ON THE NUMBERS</span><h2>Football is complicated.<br><em>So is probability.</em></h2></div><div><p>This is a simplified, data-fitted estimate—not the official nfl4th model or a guarantee. It uses 2022–2024 nflverse play-by-play to approximate conversion rates, field goal success, and nflfastR win probabilities. Decision outcomes are simplified; teams, weather, injuries, penalties, and overtime are not modeled. Extreme situations may be unreliable.</p><p>The percentages are separate conditional estimates, so they don’t add to 100%. <a href="https://github.com/namit1333/fourth-down-calculator" target="_blank" rel="noreferrer">See the model &amp; assumptions ↗</a> &nbsp; <a href="https://nflverse.nflverse.com/" target="_blank" rel="noreferrer">About nflverse ↗</a></p></div></section>
+    <section class="method"><div><span class="section-kicker">A NOTE ON THE NUMBERS</span><h2>Football is complicated.<br><em>So is probability.</em></h2></div><div><p>This is a simplified, data-fitted estimate—not the official nfl4th model or a guarantee. It uses 2022–2024 nflverse play-by-play to approximate conversion rates, field goal success, and nflfastR win probabilities. Decision outcomes are simplified; teams, weather, injuries, penalties, halftime kickoff possession, and overtime are not modeled. Extreme situations may be unreliable. The 2025 held-out evaluation is documented in the project README.</p><p>The percentages are separate conditional estimates, so they don’t add to 100%. <a href="https://github.com/namit1333/fourth-down-calculator" target="_blank" rel="noreferrer">See the model &amp; assumptions ↗</a> &nbsp; <a href="https://nflverse.nflverse.com/" target="_blank" rel="noreferrer">About nflverse ↗</a></p></div></section>
   </main><footer><div class="brand footer-brand"><span class="brand-icon">4<span>↓</span></span><span>FOURTH<span class="brand-and">&amp;</span>FOUND</span></div><span>MADE FOR THE MOMENTS THAT MATTER.</span><span>INDEPENDENT PROJECT · NOT AFFILIATED WITH THE NFL</span></footer>
   <script type="module" src="/src/main.js"></script>
 </body>
