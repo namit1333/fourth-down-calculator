@@ -60,19 +60,20 @@ function render() {
       clock, yard, distance, ourTO: Number($('our-timeouts').value), theirTO: Number($('their-timeouts').value)})
     const choices = [{key:'go', name:'Go for it', p:result.go},
       ...(result.kick === null ? [] : [{key:'kick', name:'Attempt kick', p:result.kick}]),
-      {key:'punt', name:'Punt', p:result.punt}].sort((a, b) => b.p - a.p)
+      ...(result.punt === null ? [] : [{key:'punt', name:'Punt', p:result.punt}])].sort((a, b) => b.p - a.p)
     for (const key of ['go', 'kick', 'punt']) {
       const p = result[key]
       $(`${key}-wp`).textContent = p === null ? 'N/A' : percent(p)
       $(`${key}-bar`).style.width = p === null ? '0%' : `${p * 100}%`
-      document.querySelector(`[data-option="${key}"]`).classList.toggle('best', choices[0].key === key)
+      document.querySelector(`[data-option="${key}"]`).classList.toggle('best', result.punt !== null && choices[0].key === key)
     }
     $('go-detail').textContent = `${percent(result.conversion)} chance to convert`
     $('kick-detail').textContent = result.kick === null ? `${yards(result.kickDistance)}-yard attempt · outside model range` : `${yards(result.kickDistance)}-yard attempt · ${percent(result.kickProb)} make`
-    $('punt-detail').textContent = `Historical punt outcomes by field position`
-    $('recommendation').textContent = choices[0].name + '.'
+    $('punt-detail').textContent = result.punt === null ? 'Insufficient punt data at this field position' : 'Historical punt outcomes by field position'
+    $('recommendation').textContent = result.punt === null ? `${choices[0].name} (modeled options only).` : choices[0].name + '.'
     const edge = (choices[0].p - choices[1].p) * 100
-    $('rec-explanation').textContent = edge < .05 ? 'The top choices are effectively tied in this approximation.' : `About ${edge.toFixed(1)} percentage points above ${choices[1].name.toLowerCase()}, the next-best option.`
+    const comparison = edge < .05 ? 'The modeled choices are effectively tied in this approximation.' : `About ${edge.toFixed(1)} percentage points above ${choices[1].name.toLowerCase()}, the next-best modeled option.`
+    $('rec-explanation').textContent = result.punt === null ? `${comparison} Punt is not included: insufficient data.` : comparison
   } catch (error) {
     $('validation').textContent = error.message
     $('scenario-warning').textContent = ''

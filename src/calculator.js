@@ -14,6 +14,13 @@ export function wp(score, seconds, yard, down, distance, ourTO, theirTO) {
     Math.min(distance, 30) / 10, (down - 1) / 3, t, to, to * (1 - t)]))
 }
 
+// A projected net distance crossing the goal line cannot be downed at the
+// half-yard line. Treat that approximation as a touchback instead.
+export function puntSpot(yard, netDistance) {
+  const spot = yard - netDistance
+  return spot <= 0 ? 20 : Math.min(spot, 99.5)
+}
+
 export function calculate({score, quarter, clock, yard, distance, ourTO, theirTO}) {
   const seconds = (4 - quarter) * 900 + clock
   const after = Math.max(0, seconds - 7)
@@ -40,19 +47,19 @@ export function calculate({score, quarter, clock, yard, distance, ourTO, theirTO
   const bucket = Math.min(9, Math.floor((yard - .5) / 10))
   const outcomes = model.punts[bucket]
   let punt = 0, ownSum = 0, ownCount = 0, total = 0
-  for (const [outcome, count] of outcomes) {
+  for (const [outcome, count] of outcomes ?? []) {
     let own
     if (outcome === 'return_td') {
       // A return touchdown is followed by a kickoff to the original offense.
       punt += count * wp(score - 7, after, 70, 1, 10, ourTO, theirTO)
     } else {
-      own = outcome === 'touchback' ? 20 : outcome === 'block' ? 100 - yard : clamp(yard - Number(outcome), .5, 99.5)
+      own = outcome === 'touchback' ? 20 : outcome === 'block' ? 100 - yard : puntSpot(yard, Number(outcome))
       punt += count * opponent(score, 100 - own)
       ownSum += count * own
       ownCount += count
     }
     total += count
   }
-  return {go, kick, punt: punt / total, conversion, kickProb, kickDistance,
-    tdProb, puntAverageOwn: ownSum / ownCount}
+  return {go, kick, punt: total ? punt / total : null, conversion, kickProb, kickDistance,
+    tdProb, puntAverageOwn: ownCount ? ownSum / ownCount : null}
 }
