@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fourth &amp; Found — 4th down decision calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/"><span class="brand-icon">4<span>↓</span></span><span>FOURTH<span class="brand-and">&amp;</span>FOUND<small>THE DECISION LAB</small></span></a><div class="top-right"><span class="live-dot"></span> NFL DECISION TOOL <span class="divider"></span> BUILT FOR THE BIG CALL</div></header>
+  <main class="shell">
+    <div class="intro"><div><div class="eyebrow"><span class="eyebrow-line"></span> THE FOURTH-DOWN CALCULATOR</div><h1>It's decision <em>time.</em></h1><p>One down. Three choices. Let the numbers make the call.</p></div><div class="intro-note"><span>01 / THE MISSION</span>Better decisions start<br>before the snap. <b>↗</b></div></div>
+    <div class="dashboard">
+      <section class="panel settings" aria-labelledby="situation-title">
+        <div class="panel-head"><div><div class="section-kicker">01 / SET THE SCENE</div><h2 id="situation-title">Game situation</h2></div><span class="head-icon">⌁</span></div>
+        <div class="settings-body">
+          <div class="control-heading"><span>THE SCORE</span><span class="caption">Possession team first</span></div>
+          <div class="score-inputs"><label><span>YOUR TEAM</span><input id="our-score" type="number" min="0" max="99" value="21"></label><span class="score-dash">—</span><label><span>OPPONENT</span><input id="their-score" type="number" min="0" max="99" value="24"></label></div>
+          <div class="rule"></div>
+          <div class="control-heading"><span>GAME CLOCK</span><span class="caption">Regulation only</span></div>
+          <div class="clock-inputs"><label>QUARTER<select id="quarter"><option value="1">1st quarter</option><option value="2">2nd quarter</option><option value="3">3rd quarter</option><option value="4" selected>4th quarter</option></select></label><label>MIN<input id="minutes" type="number" min="0" max="15" value="8"></label><span>:</span><label>SEC<input id="seconds" type="number" min="0" max="59" value="30"></label></div>
+          <div class="rule"></div>
+          <div class="range-block"><div class="control-heading"><label for="yardline">FIELD POSITION</label><strong id="yard-label"></strong></div><input type="range" id="yardline" min="1" max="99" value="38"><div class="range-ends"><span>OWN 1</span><span>MIDFIELD</span><span>OPP 1</span></div><p class="help">Where your offense is lined up.</p></div>
+          <div class="range-block distance-block"><div class="control-heading"><label for="distance">YARDS TO GO</label><strong id="distance-label"></strong></div><input type="range" id="distance" min="1" max="30" value="3"><div class="range-ends"><span>1 YARD</span><span>30 YARDS</span></div></div>
+          <div class="rule"></div>
+          <div class="control-heading"><span>TIMEOUTS REMAINING</span><span class="caption">This half</span></div><div class="timeout-inputs"><label>YOUR TEAM<select id="our-timeouts"><option>0</option><option>1</option><option>2</option><option selected>3</option></select></label><label>OPPONENT<select id="their-timeouts"><option>0</option><option>1</option><option>2</option><option selected>3</option></select></label></div>
+          <p id="validation" class="validation" role="status"></p>
+        </div>
+      </section>
+      <div class="results-column">
+        <section class="panel field-panel"><div class="field-head"><div><div class="section-kicker">02 / THE MATCHUP</div><h2>Picture the play.</h2></div><div class="down-badge"><span>THE SITUATION</span><strong id="down-display">4TH &amp; 3</strong></div></div><div class="field"><div class="endzone own-end"><span>YOUR SIDE</span></div><div class="yard-grid"><span class="yard-n y20">20</span><span class="yard-n y40">40</span><span class="yard-n y50">50</span><span class="yard-n y60">40</span><span class="yard-n y80">20</span><div id="first-marker" class="first-marker"></div><div id="ball-marker" class="ball-marker"><span>●</span><small>LINE OF SCRIMMAGE</small></div></div><div class="endzone opp-end"><span>END ZONE</span></div></div><div class="field-footer"><span><i class="dot-orange"></i> BALL ON <b id="field-label">OPP 38</b></span><span><i class="dot-yellow"></i> LINE TO GAIN</span><span class="field-direction">DIRECTION OF PLAY <b>→</b></span></div></section>
+        <section class="results"><div class="results-title"><div><div class="section-kicker">03 / THE BREAKDOWN</div><h2>What’s the right call?</h2><p>Estimated chance your team wins after each decision.</p></div><span class="updated"><span class="live-dot"></span> UPDATES AS YOU EDIT</span></div>
+          <div class="decision-grid"><article class="decision-card" data-option="go"><div class="decision-top"><span class="decision-number">01</span><span class="best-label">✦ BEST CALL</span></div><div class="decision-icon">↗</div><h3>Go for it</h3><p>Keep the drive alive.</p><div class="card-bottom"><span class="probability" id="go-wp">—</span><span class="prob-label">WIN<br>PROBABILITY</span></div><div class="prob-track"><span id="go-bar"></span></div><div class="detail" id="go-detail"></div></article>
+          <article class="decision-card" data-option="kick"><div class="decision-top"><span class="decision-number">02</span><span class="best-label">✦ BEST CALL</span></div><div class="decision-icon">⌁</div><h3>Attempt kick</h3><p>Take your shot at three.</p><div class="card-bottom"><span class="probability" id="kick-wp">—</span><span class="prob-label">WIN<br>PROBABILITY</span></div><div class="prob-track"><span id="kick-bar"></span></div><div class="detail" id="kick-detail"></div></article>
+          <article class="decision-card" data-option="punt"><div class="decision-top"><span class="decision-number">03</span><span class="best-label">✦ BEST CALL</span></div><div class="decision-icon">↝</div><h3>Punt</h3><p>Flip the field.</p><div class="card-bottom"><span class="probability" id="punt-wp">—</span><span class="prob-label">WIN<br>PROBABILITY</span></div><div class="prob-track"><span id="punt-bar"></span></div><div class="detail" id="punt-detail"></div></article></div>
+          <div class="recommendation"><div class="rec-icon">✳</div><div><span>THE NUMBERS SAY</span><strong id="recommendation">—</strong><p id="rec-explanation"></p></div><div class="rec-arrow">↗</div></div>
+        </section>
+      </div>
+    </div>
+    <section class="method"><div><span class="section-kicker">A NOTE ON THE NUMBERS</span><h2>Football is complicated.<br><em>So is probability.</em></h2></div><div><p>This is a simplified, data-fitted estimate—not the official nfl4th model or a guarantee. It uses 2022–2024 nflverse play-by-play to approximate conversion rates, field goal success, and nflfastR win probabilities. Decision outcomes are simplified; teams, weather, injuries, penalties, and overtime are not modeled. Extreme situations may be unreliable.</p><p>The percentages are separate conditional estimates, so they don’t add to 100%. <a href="https://github.com/namit1333/fourth-down-calculator" target="_blank" rel="noreferrer">See the model &amp; assumptions ↗</a> &nbsp; <a href="https://nflverse.nflverse.com/" target="_blank" rel="noreferrer">About nflverse ↗</a></p></div></section>
+  </main><footer><div class="brand footer-brand"><span class="brand-icon">4<span>↓</span></span><span>FOURTH<span class="brand-and">&amp;</span>FOUND</span></div><span>MADE FOR THE MOMENTS THAT MATTER.</span><span>INDEPENDENT PROJECT · NOT AFFILIATED WITH THE NFL</span></footer>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
