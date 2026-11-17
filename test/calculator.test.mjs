@@ -6,7 +6,7 @@ import vm from 'node:vm'
 const model = JSON.parse(await readFile('src/model.json', 'utf8'))
 const source = (await readFile('src/calculator.js', 'utf8'))
   .replace("import model from './model.json'", `const model = ${JSON.stringify(model)}`)
-const { calculate } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`)
+const { calculate, puntSpot, wp } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`)
 const main = (await readFile('src/main.js', 'utf8'))
   .replace("import './style.css'", '')
   .replace("import { calculate } from './calculator.js'", '')
@@ -57,12 +57,45 @@ test('rejects blank, out-of-range, fractional, invalid clock and distance entrie
 test('punt outcomes and touchdown branches remain finite and bounded in varied situations', () => {
   for (const yard of [.5, 1, 20, 38, 50, 75, 99.5]) {
     const r = calculate({score: 0, quarter: 4, clock: 600, yard, distance: Math.min(yard, 3), ourTO: 3, theirTO: 3})
-    for (const p of [r.go, r.punt, r.conversion, r.tdProb, ...(r.kick === null ? [] : [r.kick])]) assert.ok(Number.isFinite(p) && p >= 0 && p <= 1)
+    for (const p of [r.go, r.conversion, r.tdProb, ...(r.punt === null ? [] : [r.punt]), ...(r.kick === null ? [] : [r.kick])]) assert.ok(Number.isFinite(p) && p >= 0 && p <= 1)
     if (yard === 75) assert.ok(r.puntAverageOwn > 15 && r.puntAverageOwn < 50)
     if (yard === .5) assert.equal(r.tdProb, 1)
   }
   const long = calculate({score: 0, quarter: 4, clock: 600, yard: 80, distance: 50, ourTO: 3, theirTO: 3})
   assert.ok(long.tdProb < .2, `long conversion touchdown rate unexpectedly high: ${long.tdProb}`)
+})
+
+test('sparse near-goal punts are unavailable and excluded from the recommendation', () => {
+  for (const yard of [.5, 1, 10, 20, 30]) {
+    const r = calculate({score: 0, quarter: 4, clock: 600, yard, distance: Math.min(yard, 1), ourTO: 3, theirTO: 3})
+    assert.equal(r.punt, null)
+    assert.equal(r.puntAverageOwn, null)
+  }
+  for (const yard of [30.5, 31, 40, 40.5, 50, 99.5]) {
+    const r = calculate({score: 0, quarter: 4, clock: 600, yard, distance: 1, ourTO: 3, theirTO: 3})
+    assert.ok(Number.isFinite(r.punt) && r.punt >= 0 && r.punt <= 1)
+  }
+  const e = page()
+  e.yardline.value = '99'; e.distance.value = '1'; e.yardline.handler()
+  assert.equal(e['punt-wp'].textContent, 'N/A')
+  assert.match(e['punt-detail'].textContent, /Insufficient/)
+  assert.match(e['recommendation'].textContent, /modeled options only/)
+  assert.match(e['rec-explanation'].textContent, /Punt is not included/)
+})
+
+test('net distances crossing the goal line use touchback, not an invented half-yard spot', async () => {
+  assert.equal(puntSpot(31, 35), 20)
+  assert.equal(puntSpot(35, 35), 20)
+  assert.equal(puntSpot(35.5, 35), .5)
+  assert.equal(puntSpot(40, 30), 10)
+  assert.equal(puntSpot(99, -10), 99.5)
+  const synthetic = {...model, punts: model.punts.map(() => [['35', 1]])}
+  const code = (await readFile('src/calculator.js', 'utf8'))
+    .replace("import model from './model.json'", `const model = ${JSON.stringify(synthetic)}`)
+  const {calculate: calc} = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)
+  const result = calc({score: 0, quarter: 4, clock: 60, yard: 31, distance: 1, ourTO: 3, theirTO: 2})
+  assert.equal(result.puntAverageOwn, 20)
+  assert.equal(result.punt, 1 - wp(0, 53, 80, 1, 10, 2, 3))
 })
 
 test('a punt return touchdown gives possession back to the offense', async () => {
