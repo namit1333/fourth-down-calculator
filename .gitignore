@@ -1,10 +1,12 @@
 node_modules/
-dist/
-.env
-.env.*
-!.env.example
+data/
+__pycache__/
 .runtime/
 .npm-cache/
 .wrangler/
 .dev-server.log
 .worker-dev.log
+dist/
+.env
+.env.*
+!.env.example
