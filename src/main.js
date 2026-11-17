@@ -1,86 +1,83 @@
 import './style.css'
-import model from './model.json'
+import { calculate } from './calculator.js'
 
 const $ = id => document.getElementById(id)
-const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n))
-const sigmoid = n => 1 / (1 + Math.exp(-clamp(n, -30, 30)))
-const dot = (a, b) => a.reduce((sum, x, i) => sum + x * b[i], 0)
 const percent = n => `${(n * 100).toFixed(1)}%`
-const position = n => n === 50 ? 'MIDFIELD' : n < 50 ? `OPP ${n}` : `OWN ${100 - n}`
-const value = (id, min, max) => clamp(Number($(id).value) || 0, min, max)
+const yards = n => Number.isInteger(n) ? String(n) : `${Math.floor(n) || ''}½`
+const position = n => n === 50 ? 'MIDFIELD' : n < 50 ? `OPP ${yards(n)}` : `OWN ${yards(100 - n)}`
 
-function wp(score, seconds, yard, down, distance, ourTO, theirTO) {
-  if (seconds <= 0) return score > 0 ? 1 : score < 0 ? 0 : .5
-  const s = score / 10, t = clamp(seconds, 1, 3600) / 3600
-  const urgency = 1 / Math.sqrt(Math.max(t, .015))
-  const field = (50 - yard) / 50
-  const to = (ourTO - theirTO) / 3
-  return sigmoid(dot(model.wp, [1, s * urgency, s, field, field * urgency,
-    Math.min(distance, 30) / 10, (down - 1) / 3, t, to, to * (1 - t)]))
+function reset(message) {
+  for (const key of ['go', 'kick', 'punt']) {
+    $(`${key}-wp`).textContent = '—'
+    $(`${key}-detail`).textContent = 'Adjust the game situation'
+    $(`${key}-bar`).style.width = '0%'
+    document.querySelector(`[data-option="${key}"]`).classList.remove('best')
+  }
+  $('recommendation').textContent = 'Check the game situation'
+  $('rec-explanation').textContent = message
+}
+
+function readNumber(id, label) {
+  const input = $(id)
+  if (input.value === '' || !input.validity.valid || !Number.isFinite(input.valueAsNumber)) {
+    input.setAttribute('aria-invalid', 'true')
+    throw new Error(`${label}: enter a whole number from ${input.min} to ${input.max}.`)
+  }
+  input.removeAttribute('aria-invalid')
+  return input.valueAsNumber
 }
 
 function render() {
-  const score = value('our-score', 0, 99) - value('their-score', 0, 99)
-  const quarter = value('quarter', 1, 4)
-  const minute = value('minutes', 0, 15)
-  const second = value('seconds', 0, 59)
-  const clock = minute * 60 + second
-  const yard = value('yardline', 1, 99)
-  const distance = value('distance', 1, 30)
-  const ourTO = value('our-timeouts', 0, 3), theirTO = value('their-timeouts', 0, 3)
-  const seconds = (4 - quarter) * 900 + clock
-  const invalid = clock > 900 || clock === 0 || distance > yard
-  $('validation').textContent = clock > 900 ? 'The quarter clock cannot exceed 15:00.' : clock === 0 ? 'Choose a time above 0:00; the quarter has ended.' : distance > yard ? 'Yards to go cannot exceed the distance to the goal line.' : ''
+  const sliderPosition = Number($('yardline').value)
+  const yard = 100 - sliderPosition
+  const distance = Number($('distance').value)
   $('yard-label').textContent = position(yard)
-  $('distance-label').textContent = `${distance} ${distance === 1 ? 'YARD' : 'YARDS'}`
+  $('distance-label').textContent = `${yards(distance)} ${distance === 1 ? 'YARD' : 'YARDS'}`
   $('field-label').textContent = position(yard)
-  $('down-display').textContent = `4TH & ${distance === yard ? 'GOAL' : distance}`
-  $('ball-marker').style.left = `${100 - yard}%`
-  $('first-marker').style.left = `${Math.min(100, 100 - yard + distance)}%`
+  $('down-display').textContent = `4TH & ${distance === yard ? 'GOAL' : yards(distance)}`
+  $('ball-marker').style.left = `${sliderPosition}%`
+  $('first-marker').style.left = `${Math.min(100, sliderPosition + distance)}%`
   for (const id of ['yardline', 'distance']) {
     const el = $(id); el.style.setProperty('--fill', `${(el.value - el.min) / (el.max - el.min) * 100}%`)
+    el.setAttribute('aria-valuetext', id === 'yardline' ? position(yard) : `${yards(distance)} yards`)
   }
-  if (invalid) {
+  let ourScore, theirScore, minute, second
+  try {
+    ourScore = readNumber('our-score', 'Your score')
+    theirScore = readNumber('their-score', 'Opponent score')
+    minute = readNumber('minutes', 'Minutes')
+    second = readNumber('seconds', 'Seconds')
+    const clock = minute * 60 + second
+    if (clock > 900) throw new Error('The quarter clock cannot exceed 15:00.')
+    if (clock === 0) throw new Error('The quarter has ended. Select the next quarter and 15:00.')
+    if (distance > yard) throw new Error('Yards to go cannot exceed the distance to the goal line.')
+    $('validation').textContent = ''
+    const warnings = []
+    if (distance > 30) warnings.push('Long-distance situations are rare; estimates extrapolate beyond most historical attempts.')
+    if (Number($('quarter').value) === 2 && clock <= 7) warnings.push('A play ending the first half is approximate: second-half kickoff possession is not modeled.')
+    $('scenario-warning').textContent = warnings.join(' ')
+    const result = calculate({score: ourScore - theirScore, quarter: Number($('quarter').value),
+      clock, yard, distance, ourTO: Number($('our-timeouts').value), theirTO: Number($('their-timeouts').value)})
+    const choices = [{key:'go', name:'Go for it', p:result.go},
+      ...(result.kick === null ? [] : [{key:'kick', name:'Attempt kick', p:result.kick}]),
+      {key:'punt', name:'Punt', p:result.punt}].sort((a, b) => b.p - a.p)
     for (const key of ['go', 'kick', 'punt']) {
-      $(`${key}-wp`).textContent = '—'; $(`${key}-detail`).textContent = 'Adjust the game situation'; $(`${key}-bar`).style.width = '0%'
-      document.querySelector(`[data-option="${key}"]`).classList.remove('best')
+      const p = result[key]
+      $(`${key}-wp`).textContent = p === null ? 'N/A' : percent(p)
+      $(`${key}-bar`).style.width = p === null ? '0%' : `${p * 100}%`
+      document.querySelector(`[data-option="${key}"]`).classList.toggle('best', choices[0].key === key)
     }
-    $('recommendation').textContent = 'Check the game situation'; $('rec-explanation').textContent = 'Enter a valid regulation situation to see the comparison.'
-    return
+    $('go-detail').textContent = `${percent(result.conversion)} chance to convert`
+    $('kick-detail').textContent = result.kick === null ? `${yards(result.kickDistance)}-yard attempt · outside model range` : `${yards(result.kickDistance)}-yard attempt · ${percent(result.kickProb)} make`
+    $('punt-detail').textContent = `Historical punt outcomes by field position`
+    $('recommendation').textContent = choices[0].name + '.'
+    const edge = (choices[0].p - choices[1].p) * 100
+    $('rec-explanation').textContent = edge < .05 ? 'The top choices are effectively tied in this approximation.' : `About ${edge.toFixed(1)} percentage points above ${choices[1].name.toLowerCase()}, the next-best option.`
+  } catch (error) {
+    $('validation').textContent = error.message
+    $('scenario-warning').textContent = ''
+    reset('Enter a valid regulation situation to see the comparison.')
   }
-  const d = Math.min(distance, 30) / 10
-  const conversion = sigmoid(dot(model.go, [1, d, d * d, yard < 10 ? 1 : 0]))
-  const kickDistance = yard + 17
-  const kd = kickDistance / 50
-  const kickAvailable = kickDistance <= 75
-  const kickProb = kickAvailable ? sigmoid(dot(model.kick, [1, kd, kd * kd])) : 0
-  const after = Math.max(0, seconds - 7)
-  const fail = 1 - wp(-score, after, 100 - yard, 1, 10, theirTO, ourTO)
-  const gainedYard = Math.max(1, yard - distance - 2)
-  const success = distance === yard
-    ? 1 - wp(-(score + 7), after, 70, 1, 10, theirTO, ourTO)
-    : wp(score, after, gainedYard, 1, Math.min(10, gainedYard), ourTO, theirTO)
-  const go = conversion * success + (1 - conversion) * fail
-  const make = 1 - wp(-(score + 3), after, 70, 1, 10, theirTO, ourTO)
-  const missOppYard = Math.min(80, Math.max(1, 100 - (yard + 7)))
-  const miss = 1 - wp(-score, after, missOppYard, 1, 10, theirTO, ourTO)
-  const kick = kickProb * make + (1 - kickProb) * miss
-  const opponentOwn = yard <= 40 ? 20 : Math.max(1, 100 - yard - 40)
-  const punt = 1 - wp(-score, after, 100 - opponentOwn, 1, 10, theirTO, ourTO)
-  const choices = [{key:'go', name:'Go for it', p:go}, ...(kickAvailable ? [{key:'kick', name:'Attempt kick', p:kick}] : []), {key:'punt', name:'Punt', p:punt}].sort((a,b) => b.p - a.p)
-  const values = {go, kick, punt}
-  for (const key of ['go', 'kick', 'punt']) {
-    const available = key !== 'kick' || kickAvailable
-    $(`${key}-wp`).textContent = available ? percent(values[key]) : 'N/A'
-    $(`${key}-bar`).style.width = available ? `${clamp(values[key] * 100, 0, 100)}%` : '0%'
-    document.querySelector(`[data-option="${key}"]`).classList.toggle('best', choices[0].key === key)
-  }
-  $('go-detail').textContent = `${percent(conversion)} chance to convert`
-  $('kick-detail').textContent = kickAvailable ? `${kickDistance}-yard attempt · ${percent(kickProb)} make` : `${kickDistance}-yard attempt · outside model range`
-  $('punt-detail').textContent = `Estimated landing: opponent ${opponentOwn}`
-  $('recommendation').textContent = choices[0].name + '.'
-  const edge = (choices[0].p - choices[1].p) * 100
-  $('rec-explanation').textContent = edge < .05 ? 'The top choices are effectively tied in this approximation.' : `About ${edge.toFixed(1)} percentage points above ${choices[1].name.toLowerCase()}, the next-best option.`
 }
 
 document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', render))
